@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Coding Tools Library</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/7.16.1/firebase-app.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/7.16.1/firebase-firestore.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .title {
+      font-size: 2.5rem;
+      color: #2C3E50;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .add-btn {
+      padding: 12px 20px;
+      background: #4ECDC4;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+    }
+
+    .add-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    }
+
+    .categories {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      justify-content: center;
+    }
+
+    .category-btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .category-btn.active {
+      background: #4ECDC4;
+      color: white;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .tool-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.5s forwards;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .tool-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+    }
+
+    .tool-category {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #4ECDC4;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    .tool-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 24px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .tool-name {
+      margin: 15px 0 10px;
+      color: #2C3E50;
+      font-size: 1.2rem;
+    }
+
+    .tool-link {
+      background: #45B7D1;
+      color: white;
+      padding: 10px 15px;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-top: 10px;
+      transition: background 0.3s ease;
+    }
+
+    .tool-link:hover {
+      background: #3AA0C2;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      transform: scale(0.9);
+      opacity: 0;
+      animation: scaleIn 0.3s ease forwards;
+    }
+
+    @keyframes scaleIn {
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 class="title">🛠️ Coding Tools Library</h1>
+      <button class="add-btn" onclick="openModal()">+ Add Tool</button>
+    </div>
+
+    <div class="categories" id="categories">
+      <button class="category-btn active" onclick="filterTools('')">All Tools</button>
+    </div>
+
+    <div class="tools-grid" id="toolsGrid"></div>
+
+    <div class="modal" id="addToolModal">
+      <div class="modal-content">
+        <h2 style="text-align: center; margin-bottom: 20px; color: #333">Add New Tool</h2>
+        <form id="addToolForm" onsubmit="handleSubmit(event)">
+          <input type="text" placeholder="Tool Name" required>
+          <select required>
+            <option value="">Select Category</option>
+            <option value="AI">AI Tools</option>
+            <option value="Development">Development</option>
+            <option value="Design">Design</option>
+            <option value="Productivity">Productivity</option>
+          </select>
+          <input type="url" placeholder="Tool Link" required>
+          <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <button type="button" onclick="closeModal()">Cancel</button>
+            <button type="submit">Add Tool</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+    apiKey: "AIzaSyASaruw5ikbGkwai5zpnwjCAzHeN8416Oc",
+    authDomain: "coderesources-eec78.firebaseapp.com",
+    projectId: "coderesources-eec78",
+    storageBucket: "coderesources-eec78.firebasestorage.app",
+    messagingSenderId: "469920716108",
+    appId: "1:469920716108:web:fc5b84b021bbad73312be9",
+    measurementId: "G-S6XFRYMYEG"
+  };
+    
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const categories = ['AI', 'Development', 'Design', 'Productivity'];
+    let tools = [];
+    
+    // Initialize category buttons
+    categories.forEach(category => {
+      const btn = document.createElement('button');
+      btn.className = 'category-btn';
+      btn.onclick = () => filterTools(category);
+      btn.textContent = category;
+      document.getElementById('categories').appendChild(btn);
+    });
+
+    // Fetch tools from Firebase
+    async function fetchTools() {
+      const snapshot = await db.collection('tools').orderBy('timestamp', 'desc').get();
+      tools = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+      renderTools(tools);
+    }
+
+    function filterTools(category) {
+      const filtered = category ? tools.filter(tool => tool.category === category) : tools;
+      renderTools(filtered);
+      
+      // Update active category
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent === (category || 'All Tools'));
+      });
+    }
+
+    function renderTools(toolsToRender) {
+      const grid = document.getElementById('toolsGrid');
+      grid.innerHTML = '';
+      
+      toolsToRender.forEach((tool, index) => {
+        const card = document.createElement('div');
+        card.className = 'tool-card';
+        card.style.animationDelay = `${index * 0.1}s`;
+        
+        // Generate tool content
+        card.innerHTML = `
+          <div class="tool-category">${tool.category}</div>
+          <div class="tool-icon" style="background-color: ${getRandomColor(tool.name)}">${tool.name[0].toUpperCase()}</div>
+          <h3 class="tool-name">${tool.name}</h3>
+          <a href="${tool.link}" class="tool-link" target="_blank" rel="noopener noreferrer">Open Tool</a>
+        `;
+        
+        grid.appendChild(card);
+      });
+    }
+
+    function getRandomColor(name) {
+      const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E', '#6C5CE7', '#A8E6CF', '#FF8ED4', '#5F27CD'];
+      const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+      return colors[index];
+    }
+
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const form = e.target;
+      const tool = {
+        name: form[0].value,
+        category: form[1].value,
+        link: form[2].value,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      await db.collection('tools').add(tool);
+      await fetchTools();
+      closeModal();
+      form.reset();
+    }
+
+    function openModal() {
+      document.getElementById('addToolModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('addToolModal').classList.remove('active');
+    }
+
+    // Initial load
+    fetchTools();
+  </script>
+</body>
+</html>
